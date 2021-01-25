@@ -12,7 +12,7 @@
 -module(task1).
 -export([eval/1, eval/2]).
 
-eval({ok, A}) when is_number(A) -> A;
+eval_second(A) when is_number(A) -> A;
 % eval({ok, T}) -> 
 % 	case T of
 % 		{add, A, B} when (is_number(A) orelse (is_tuple(A) andalso tuple_size(A)=:=3)) andalso (is_number(B) orelse (is_tuple(B) andalso tuple_size(B)=:=3)) -> eval({ok, A})+eval({ok, B});
@@ -22,20 +22,30 @@ eval({ok, A}) when is_number(A) -> A;
 % 		_ -> error
 % 	end;
 
-eval({ok, T}) -> 
+eval_second(T) -> 
 		% {Op, A, B} when (is_number(A) orelse (is_tuple(A) andalso tuple_size(A)=:=3)) andalso (is_number(B) orelse (is_tuple(B) andalso tuple_size(B)=:=3)) ->
 	try
 		case T of
-			{add, A, B} -> eval({ok, A})+eval({ok, B});
-			{sub, A, B} -> eval({ok, A})-eval({ok, B});
-			{mul, A, B} -> eval({ok, A})*eval({ok, B});
-			{'div', A, B} -> eval({ok, A})/eval({ok, B})
+			{add, A, B} -> eval_second(A)+eval_second(B);
+			{sub, A, B} -> eval_second(A)-eval_second(B);
+			{mul, A, B} -> eval_second(A)*eval_second(B);
+			{'div', A, B} -> eval_second(A)/eval_second(B)
 		end
 	catch
 		_:_ -> error
-	end;
+	end.
 
-eval(T) -> eval({ok, T}).
+eval(T) ->
+	try
+		case T of
+			{add, A, B} -> {ok, eval_second(A)+eval_second(B)};
+			{sub, A, B} -> {ok, eval_second(A)-eval_second(B)};
+			{mul, A, B} -> {ok, eval_second(A)*eval_second(B)};
+			{'div', A, B} -> {ok, eval_second(A)/eval_second(B)}
+		end
+	catch
+		_:_ -> error
+	end.
 
 
 
@@ -68,8 +78,8 @@ eval_with_map({N, _}) when is_number(N) -> N;
 	% 	_ -> error
 	% end.
 
-eval_with_map({{_, A, _}, L}) when (is_atom(A) andalso is_map_key(A, L) =:= false) -> variable_not_found;
-eval_with_map({{_, _, B}, L}) when (is_atom(B) andalso is_map_key(B, L) =:= false) -> variable_not_found;
+eval_with_map({{_, A, _}, L}) when (is_atom(A) andalso is_map_key(A, L) =:= false) -> {error, variable_not_found};
+eval_with_map({{_, _, B}, L}) when (is_atom(B) andalso is_map_key(B, L) =:= false) -> {error, variable_not_found};
 
 eval_with_map({E, L}) -> 
 	try
@@ -82,8 +92,22 @@ eval_with_map({E, L}) ->
 			{{'div', A, B}, L} -> eval_with_map({A, L})/eval_with_map({B, L})
 		end
 	catch
-		_:_ -> error
+		_:_ -> {error, unknown_error}
 	end.
 
-eval(E, L) -> eval_with_map({E,L}).
+eval({_, A, _}, L) when (is_atom(A) andalso is_map_key(A, L) =:= false) -> {error, variable_not_found};
+eval({_, _, B}, L) when (is_atom(B) andalso is_map_key(B, L) =:= false) -> {error, variable_not_found};
+eval(E, L) -> 
+	try
+		case {E, L} of
+			% {{_, A, _}, L} when (is_atom(A) andalso is_map_key(A, L) =:= false) -> throw(variable_not_found);
+			% {{_, _, B}, L} when (is_atom(B) andalso is_map_key(B, L) =:= false) -> throw(variable_not_found);	
+			{{add, A, B}, L} -> {ok, eval_with_map({A, L})+eval_with_map({B, L})};
+			{{sub, A, B}, L} -> {ok, eval_with_map({A, L})-eval_with_map({B, L})};
+			{{mul, A, B}, L} -> {ok, eval_with_map({A, L})*eval_with_map({B, L})};
+			{{'div', A, B}, L} -> {ok, eval_with_map({A, L})/eval_with_map({B, L})}
+		end
+	catch
+		_:_ -> {error, unknown_error}
+	end.
 
