@@ -14,7 +14,6 @@
 
 
 % eval/1
-eval_second(A) when is_number(A) -> A;
 eval_second(T) -> 
 		% {Op, A, B} when (is_number(A) orelse (is_tuple(A) andalso tuple_size(A)=:=3)) andalso (is_number(B) orelse (is_tuple(B) andalso tuple_size(B)=:=3)) ->
 	try
@@ -22,7 +21,8 @@ eval_second(T) ->
 			{add, A, B} -> eval_second(A)+eval_second(B);
 			{sub, A, B} -> eval_second(A)-eval_second(B);
 			{mul, A, B} -> eval_second(A)*eval_second(B);
-			{'div', A, B} -> eval_second(A)/eval_second(B)
+			{'div', A, B} -> eval_second(A)/eval_second(B);
+			A when is_number(A) -> A
 		end
 	catch
 		_:_ -> error
@@ -43,38 +43,40 @@ eval(T) ->
 
 % eval/2
 
-eval_with_map({A, L}) when is_atom(A) -> maps:get(A,L);
-eval_with_map({N, _}) when is_number(N) -> N;
-eval_with_map({{_, A, _}, L}) when (is_atom(A) andalso is_map_key(A, L) =:= false) -> {error, variable_not_found};
-eval_with_map({{_, _, B}, L}) when (is_atom(B) andalso is_map_key(B, L) =:= false) -> {error, variable_not_found};
+% eval_with_map({A, L}) when is_atom(A) -> maps:get(A,L);
+% eval_with_map({N, _}) when is_number(N) -> N;
+% eval_with_map({{_, A, _}, L}) when (is_atom(A) andalso is_map_key(A, L) =:= false) -> {error, variable_not_found};
+% eval_with_map({{_, _, B}, L}) when (is_atom(B) andalso is_map_key(B, L) =:= false) -> {error, variable_not_found};
 eval_with_map({E, L}) -> 
 	try
 		case {E, L} of
-			% {{_, A, _}, L} when (is_atom(A) andalso is_map_key(A, L) =:= false) -> throw(variable_not_found);
-			% {{_, _, B}, L} when (is_atom(B) andalso is_map_key(B, L) =:= false) -> throw(variable_not_found);	
+			{{_, A, _}, L} when (is_atom(A) andalso is_map_key(A, L) =:= false) -> throw({error, variable_not_found});
+			{{_, _, B}, L} when (is_atom(B) andalso is_map_key(B, L) =:= false) -> throw({error, variable_not_found});
+			{A, L} when is_atom(A) -> maps:get(A,L);
+			{N, _} when is_number(N) -> N;	
 			{{add, A, B}, L} -> eval_with_map({A, L})+eval_with_map({B, L});
 			{{sub, A, B}, L} -> eval_with_map({A, L})-eval_with_map({B, L});
 			{{mul, A, B}, L} -> eval_with_map({A, L})*eval_with_map({B, L});
 			{{'div', A, B}, L} -> eval_with_map({A, L})/eval_with_map({B, L})
 		end
 	catch
+		{error, variable_not_found} -> throw({error, variable_not_found});
 		_:_ -> {error, unknown_error}
 	end.
 
-eval({_, A, _}, L) when (is_atom(A) andalso is_map_key(A, L) =:= false) -> {error, variable_not_found};
-eval({_, _, B}, L) when (is_atom(B) andalso is_map_key(B, L) =:= false) -> {error, variable_not_found};
 eval(E, L) -> 
 	try
 		% TODO: kolla om kan köra bara case E
 		case {E, L} of
-			% {{_, A, _}, L} when (is_atom(A) andalso is_map_key(A, L) =:= false) -> throw(variable_not_found);
-			% {{_, _, B}, L} when (is_atom(B) andalso is_map_key(B, L) =:= false) -> throw(variable_not_found);	
+			{{_, A, _}, L} when (is_atom(A) andalso is_map_key(A, L) =:= false) -> {error, variable_not_found};
+			{{_, _, B}, L} when (is_atom(B) andalso is_map_key(B, L) =:= false) -> {error, variable_not_found};	
 			{{add, A, B}, L} -> {ok, eval_with_map({A, L})+eval_with_map({B, L})};
 			{{sub, A, B}, L} -> {ok, eval_with_map({A, L})-eval_with_map({B, L})};
 			{{mul, A, B}, L} -> {ok, eval_with_map({A, L})*eval_with_map({B, L})};
 			{{'div', A, B}, L} -> {ok, eval_with_map({A, L})/eval_with_map({B, L})}
 		end
 	catch
+		{error, variable_not_found} -> {error, variable_not_found};
 		_:_ -> {error, unknown_error}
 	end.
 
