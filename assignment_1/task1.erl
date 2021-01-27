@@ -22,17 +22,18 @@ eval_second(T) ->
 			A when is_number(A) -> A
 		end
 	catch
-		_:_ -> error
+		_:_ -> throw(error)
 	end.
 
 eval(T) ->
 	try
-		case T of
-			{add, A, B} -> {ok, eval_second(A)+eval_second(B)};
-			{sub, A, B} -> {ok, eval_second(A)-eval_second(B)};
-			{mul, A, B} -> {ok, eval_second(A)*eval_second(B)};
-			{'div', A, B} -> {ok, eval_second(A)/eval_second(B)}
-		end
+		% case T of
+		% 	{add, A, B} -> {ok, eval_second(A)+eval_second(B)};
+		% 	{sub, A, B} -> {ok, eval_second(A)-eval_second(B)};
+		% 	{mul, A, B} -> {ok, eval_second(A)*eval_second(B)};
+		% 	{'div', A, B} -> {ok, eval_second(A)/eval_second(B)}
+		% end
+		{ok, eval_second(T)}
 	catch
 		_:_ -> error
 	end.
@@ -52,19 +53,20 @@ eval_with_map(E, L) ->
 		end
 	catch
 		variable_not_found -> throw(variable_not_found);
-		_:_ -> {error, unknown_error}
+		_:_ -> throw(error)
 	end.
 
 eval(E, L) -> 
 	try
-		case E of
-			{_, A, _} when (is_atom(A) andalso is_map_key(A, L) =:= false) -> throw(variable_not_found);
-			{_, _, B} when (is_atom(B) andalso is_map_key(B, L) =:= false) -> throw(variable_not_found);	
-			{add, A, B} -> {ok, eval_with_map(A, L)+eval_with_map(B, L)};
-			{sub, A, B} -> {ok, eval_with_map(A, L)-eval_with_map(B, L)};
-			{mul, A, B} -> {ok, eval_with_map(A, L)*eval_with_map(B, L)};
-			{'div', A, B} -> {ok, eval_with_map(A, L)/eval_with_map(B, L)}
-		end
+		% case E of
+		% 	{_, A, _} when (is_atom(A) andalso is_map_key(A, L) =:= false) -> throw(variable_not_found);
+		% 	{_, _, B} when (is_atom(B) andalso is_map_key(B, L) =:= false) -> throw(variable_not_found);	
+		% 	{add, A, B} -> {ok, eval_with_map(A, L)+eval_with_map(B, L)};
+		% 	{sub, A, B} -> {ok, eval_with_map(A, L)-eval_with_map(B, L)};
+		% 	{mul, A, B} -> {ok, eval_with_map(A, L)*eval_with_map(B, L)};
+		% 	{'div', A, B} -> {ok, eval_with_map(A, L)/eval_with_map(B, L)}
+		% end
+		{ok, eval_with_map(E,L)}
 	catch
 		variable_not_found -> {error, variable_not_found};
 		_:_ -> {error, unknown_error}
