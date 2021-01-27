@@ -3,9 +3,8 @@
 % The double-process accepts messages on the form Pid, Ref, N and returns a message with N doubled. 
 % If the process receives a non-number it should crash.
 
-% TODO: should be able to send twice?
 -module(double).
--export([start/0]).
+-export([start/0, double/1]).
 
 start() ->
 	Pid = spawn(fun double/0),
@@ -17,3 +16,12 @@ double() ->
 		Pid ! {Ref, 2*N},
 		double()
 	end.
+
+double(T) ->
+	Ref = make_ref(), 
+	double ! {self(), Ref, T}.
+	% TODO: try again
+	% receive
+	%     {'DOWN', Ref, process, _Pid, _Why} ->
+	% 	double(T)
+	% end.
