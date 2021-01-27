@@ -11,12 +11,15 @@
 -export([start1/0]).
 
 start1() ->
-    spawn(fun () ->
-   		double:start(),
-		receive
-		    {'DOWN', _Ref, process, _Pid, _Why} ->
-			start1()
-		end
-	end).
+    Pid = spawn(fun monitor/0), 
+	register(monitor, Pid).
 
 
+monitor() ->    		
+	double:start(),
+   	Pid = whereis(double),
+   	Ref = monitor(process, Pid),
+	receive
+	    {'DOWN', Ref, process, Pid, _Why} ->
+		monitor()
+	end.
