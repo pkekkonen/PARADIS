@@ -3,11 +3,16 @@
 -module(bank).
 -export([start/0, balance/2, deposit/3, withdraw/3, lend/4]).
 
+% TODO: ska använda monitor/2
+
 % Start a new bank-server with all accounts having zero balance, returns a
 % pid to the server.
 start() ->
+	spawn(fun bank_server/0).
+
+bank_server() ->
     ets:new(bank_server, [set,private,named_table]),
-	spawn(fun loop/0).
+    loop().
 
 loop() ->
     receive
@@ -17,7 +22,7 @@ loop() ->
     		Pid ! {no_account, Ref};
     	[{Who, Balance}] ->
     		Pid ! {ok, Ref, Balance} 
-	    end,
+	    end;
 	{_Pid, _Ref, stop} ->
 	    ok;
 	{Pid, Ref, {deposit, {Who, X}}} ->
@@ -28,7 +33,7 @@ loop() ->
 		[{Who, OldValue}] ->
 			ets:insert(bank_server, {Who, OldValue+X}),
 		    Pid ! {ok, Ref, OldValue+X}
-	    end,
+	    end;
 	{Pid, Ref, {withdraw, {Who, X}}} ->
 	    case ets:lookup(bank_server, Who) of
 		[] ->
@@ -38,7 +43,7 @@ loop() ->
 		    Pid ! {ok, Ref, OldValue-X};
 		[{Who, OldValue}] when OldValue < X ->
 		    Pid ! {Ref, insufficient_funds}	
-	    end,
+	    end;
 	{Pid, Ref, {lend, {From, To, X}}} ->
 	    case {ets:lookup(bank_server, From), ets:lookup(bank_server, To)} of
 		{[], []} ->
@@ -64,7 +69,7 @@ balance(Pid, Who) when is_pid(Pid)->
     Pid ! {self(), Ref, {balance, Who}},
     receive
 	{ok, Ref, Balance} ->
-	    balance
+	    {ok, Balance};
 	{no_account, Ref} ->
 	    no_account
     after 1000 ->
@@ -92,7 +97,7 @@ withdraw(Pid, Who, X) when is_pid(Pid) ->
     Pid ! {self(), Ref, {withdraw, {Who, X}}},
     receive
 	{Ref, insufficient_funds} ->
-	    insufficient_funds
+	    insufficient_funds;
 	{ok, Ref, AmountLeft} ->
 	    {ok, AmountLeft}
     after 1000 ->
@@ -108,9 +113,9 @@ lend(Pid, From, To, X) when is_pid(Pid) ->
     Pid ! {self(), Ref, {lend, {From, To, X}}},
     receive
 	{Ref, insufficient_funds} ->
-	    insufficient_funds
+	    insufficient_funds;
 	{Ref, no_account, Who} ->
-	    {no_account, Who}
+	    {no_account, Who};
 	{Ref, ok} ->
 	    ok	    
     after 1000 ->
