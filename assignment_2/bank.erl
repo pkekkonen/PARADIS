@@ -3,12 +3,20 @@
 -module(bank).
 -export([start/0, balance/2, deposit/3, withdraw/3, lend/4]).
 
-% TODO: ska använda monitor/2
+% TODO: ska använda monitor/2 and make sure that it returns 
+% no_bank when the Pid sent is not valid
 
 % Start a new bank-server with all accounts having zero balance, returns a
 % pid to the server.
 start() ->
-	spawn(fun bank_server/0).
+    spawn(fun () -> 
+		Pid = spawn(fun bank_server/0),
+		MRef = monitor(process, Pid),
+		receive
+	    	{'DOWN', MRef, process, Pid, _Why} ->
+			monitor()
+		end,
+	end).
 
 bank_server() ->
     ets:new(bank_server, [set,private,named_table]),
@@ -64,7 +72,7 @@ loop() ->
 
 
 % Return the balance of Who from the server Pid. Return ok or no account.
-balance(Pid, Who) when is_pid(Pid)->
+balance(Pid, Who) when is_pid(Pid) ->
     Ref = make_ref(),
     Pid ! {self(), Ref, {balance, Who}},
     receive
@@ -74,7 +82,8 @@ balance(Pid, Who) when is_pid(Pid)->
 	    no_account
     after 1000 ->
 	    error
-    end.
+    end;
+balance(_Pid, _Who) -> no_bank.
 
 % Deposit X amount of money to the account Who at the server Pid. 
 % If no account exists a new account for Who is opened. 
@@ -87,8 +96,8 @@ deposit(Pid, Who, X) when is_pid(Pid) ->
 	    {ok, NewAmount}
     after 1000 ->
 	    error
-    end.
-
+    end;
+deposit(_Pid, _Who, _X) -> no_bank.
 
 % Withdraw X amount of money from the account Who at the server Pid. 
 % Returns {ok, AmountLeft} or insufficient funds.
@@ -102,7 +111,8 @@ withdraw(Pid, Who, X) when is_pid(Pid) ->
 	    {ok, AmountLeft}
     after 1000 ->
 	    error
-    end.
+    end;
+withdraw(_Pid, _Who, _X) -> no_bank.
 
 
 % Lend X amounts of money from From to To. 
@@ -120,7 +130,8 @@ lend(Pid, From, To, X) when is_pid(Pid) ->
 	    ok	    
     after 1000 ->
 	    error
-    end.
+    end;
+lend(_Pid, _From, _To, _X) -> no_bank.
 
 
 

@@ -10,6 +10,7 @@
 -import(double, [start/0]).
 -export([start1/0]).
 
+% TODO: how can i have correct name?
 start1() ->
     Pid = spawn(fun monitor/0), 
 	register(monitor, Pid).
@@ -18,8 +19,8 @@ start1() ->
 monitor() ->    		
 	double:start(),
    	Pid = whereis(double),
-   	Ref = monitor(process, Pid),
+   	MRef = monitor(process, Pid),
 	receive
-	    {'DOWN', Ref, process, Pid, _Why} ->
+	    {'DOWN', MRef, process, Pid, _Why} ->
 		monitor()
 	end.
