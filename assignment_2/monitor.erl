@@ -7,11 +7,9 @@
 % monitor process restarting it.
 
 -module(monitor).
--import(double, [start/0]).
--export([start1/0]).
+-export([start/0]).
 
-% TODO: how can i have correct name?
-start1() ->
+start() ->
     Pid = spawn(fun monitor/0), 
 	register(monitor, Pid).
 

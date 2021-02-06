@@ -19,7 +19,13 @@ double() ->
 
 double(T) ->
 	Ref = make_ref(), 
-	double ! {self(), Ref, T}.
+	double ! {self(), Ref, T},
+
+	receive
+		{Ref, N} -> self() ! {Ref, 2*N}
+		after 1000 -> double ! {self(), Ref, T}
+	end.
+
 	% TODO: try again
 	% receive
 	%     {'DOWN', Ref, process, _Pid, _Why} ->
