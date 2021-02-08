@@ -76,7 +76,6 @@
 -export([handle_work/1, ordered/2]).
 %% Simple handle_work: apply the function to the value
 handle_work({Fun, V}) ->
-
 {result, Fun(V)}.
 ordered(Fun, L) ->
 %% Start a work-pool with 2 workers
@@ -89,6 +88,13 @@ Result = gen_worker:await_all(Refs),
 gen_worker:stop(WorkPool),
 %% Return the result
 Result.
+
+
+42> pmap:ordered(fun (X) -> when  X > 4 ->  2 end, [2,3,5,2,6]).  
+* 10: syntax error before: 'when'
+42> pmap:ordered(fun (X) when  X > 4 ->  2 end, [2,3,5,2,6]).   
+[]
+43> pmap:ordered(fun (X) -> X*2 end, [1,2,3]).                                  []                                                                              44> c(pmap), c(gen_worker).                                                     {ok,gen_worker}                                                                 45> pmap:ordered(fun (X) -> X*2 end, [1,2,3]).                                  [no_result,no_result,no_result]                                                 46> c(pmap), c(gen_worker).                                                     {ok,gen_worker}                                                                 47> pmap:ordered(fun (X) -> X*2 end, [1,2,3]).                                                                                                                                                                 
 
 
 

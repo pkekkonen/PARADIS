@@ -12,8 +12,8 @@ start() ->
 
 
 start_link() ->
-    Pid = spawn_link(?MODULE, double, []),
-    register(double, Pid),
+    Pid = spawn_link(fun double/0),
+    register(?MODULE, Pid),
     {ok, Pid}.
 
 double() ->
@@ -25,9 +25,9 @@ double() ->
 
 double(T) ->
 	Ref = make_ref(), 
-	double ! {self(), Ref, T},
+	?MODULE ! {self(), Ref, T},
 
 	receive
 		{Ref, N} -> self() ! {Ref, 2*N}
-		after 1000 -> double ! {self(), Ref, T}
+		after 1000 -> ?MODULE ! {self(), Ref, T}
 	end.

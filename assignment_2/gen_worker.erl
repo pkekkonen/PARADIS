@@ -3,18 +3,17 @@
 
 -callback handle_work(State :: term()) ->  NewState :: term().
 
-% Start a work-pool with Callback (module?) and Max processes handling the
+% TODO: måste ets vara private???? i double
+
+% Start a work-pool with Callback and Max processes handling the
 % work. Pid is the process identifier of the work-pool.
 start(Callback, Max) ->
     Pid = spawn(fun () ->
-
-        Pids = [spawn_work() || I <- lists:seq(1,Max)],
-
+        Pids = [spawn_work() || _ <- lists:seq(1,Max)],
 		loop(Callback, Pids, 1, Max)
 		end),
     Pid.
 
-%DO we really need callback
 loop(Callback, Pids, Current, Max) ->
 	receive
 		{to_master, Pid, {Ref, W}} ->
@@ -22,7 +21,7 @@ loop(Callback, Pids, Current, Max) ->
 			if
 			Current >= Max ->
 				loop(Callback, Pids, 1, Max);
-			true ->	
+			true  ->	
 				loop(Callback, Pids, Current+1, Max)
 			end;
 		{stop, Pid} ->
@@ -42,9 +41,14 @@ spawn_work() ->
 worker() ->
     receive
 	{process, To, {Ref, Callback, W}} ->
+		Result =
+			try
+				Callback:handle_work(W)
+			catch
+				_:_ -> error
+			end,
 
-	% TODO: handle work ska vara inom try catch
-	    To ! {result, self(), {Ref, Callback:handle_work(W)}},
+	    To ! {result, {Ref, Result}},
 	    worker()
     end.
 
@@ -65,25 +69,21 @@ async(Pid, W) ->
     Ref.
 
 
-%TODO: error/no_result
 % Await the result with the unique reference Ref created
 % by async(Pid, W). Returns no result, error or {result, Result}.
 await(Ref) ->
 	receive
-	{result, Pid, {Ref, Result}} ->
+	{result, {Ref, Result}} ->
 		Result
+	after 1000 -> no_result
 	end.
 
 % Await the work for all references in the list Refs and return a (possibly empty) 
 % list of results. Work resulting in no result should not be included in the list.
 await_all(Refs) ->
+    [ format_result(Res) || Res<- [await(Ref) || Ref <- Refs], Res =/= no_result, Res =/= error].
 
-    [ format_result(Res) || Res<- [await(Ref) || Ref <- Refs]].
 
-
-format_result(Res) ->
-	case Res of
-		{result, Result} -> Result;
-		R -> R
-	end.
+format_result({result, Result}) ->
+	Result.
 

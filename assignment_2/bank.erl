@@ -136,19 +136,5 @@ lend(_Pid, _From, _To, _X) -> no_bank.
 
 
 
-		Pid = bank:start(),
-		bank:deposit(Pid, alice, 100),
-		R = bank:withdraw(Pid, alice, 50),
-		exit(Pid, kill),
-		R.
-
-		Pid = bank:start(),
-		bank:deposit(Pid, alice, 100),
-		R = bank:withdraw(Pid, alice, 200),
-		exit(Pid, kill),
-		R.
-
-
-
 
 
