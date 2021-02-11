@@ -1,8 +1,3 @@
-% Implement the monitor-module from Assignment 2 Problem 1 using the
-% supervisor behavior. The functionality should be exactly the same, i.e.,
-% the monitor module starts the double process and monitors it, restarting
-% it if it crashes. Note that only monitor.erl should be submitted!
-
 -module(monitor).
 -export([init/1, start_link/0]).
 -behavior(supervisor).

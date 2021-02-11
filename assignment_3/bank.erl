@@ -1,13 +1,23 @@
-% Implement the bank-module from Assignments 2 Problem 1 using the gen server
-% behavior. The inferface should exactly correspond to that of Assignment 2.
-% Note that you can reuse much of your application logic.
-
 -module(bank).
--export([init/1, start_link/0, handle_call/3, handle_cast/2, balance/2, deposit/3, withdraw/3, lend/4]).
+-export([init/1, start_link/0, start/0, handle_call/3, handle_info/2, handle_cast/2, balance/2, deposit/3, withdraw/3, lend/4, terminate/2]).
 -behavior(gen_server).
 
+start() -> 
+    start_link().
+    
 start_link() ->
-	gen_server:start_link(?MODULE, [], []).
+	{ok, Pid} = gen_server:start_link(?MODULE, [], []),
+	spawn(fun () -> 
+		MRef = monitor(process, Pid),
+		receive
+	    	{'DOWN', MRef, process, _Pid, _Why} ->
+	    	    	io:format("HEJ"),
+			% ets:delete(bank_server),
+			no_bank,
+			io:format("gtgtgt")
+		end
+	end),
+	Pid.
 
 init(_) -> 
 	ets:new(bank_server, [set, private, named_table]),
@@ -40,8 +50,12 @@ terminate(_Reason, _State) ->
 
 % Return the balance of Who from the server Pid. Return ok or no account.
 balance(Pid, Who) when is_pid(Pid)->	
-	{ok, gen_server:call(Pid, {get, Who})};
-balance(Pid, Who) -> no_bank.	
+	Response = gen_server:call(Pid, {get, Who}),
+	case Response of
+		no_account -> no_account;
+		Amount -> {ok, Amount}
+	end;
+balance(_Pid, _Who) -> no_bank.	
 
 % Deposit X amount of money to the account Who at the server Pid. 
 % If no account exists a new account for Who is opened. 
@@ -81,7 +95,7 @@ lend(Pid, From, To, X) when is_pid(Pid) ->
 	    {no_account, To};
 	{no_account, _} ->
 	    {no_account, From};
-	{FromAmount, ToAmount} ->
+	{_FromAmount, _ToAmount} ->
 		case withdraw(Pid, From, X) of
 			insufficient_funds -> 
 				insufficient_funds;
@@ -91,6 +105,7 @@ lend(Pid, From, To, X) when is_pid(Pid) ->
 		end
     end;
 lend(_Pid, _From, _To, _X) -> no_bank.
+
 
 
 

@@ -12,6 +12,7 @@ start() ->
 		MRef = monitor(process, PidBankServer),
 		receive
 	    	{'DOWN', MRef, process, _Pid, _Why} ->
+	    	io:format("HEJ"),
 			ets:delete(bank_server),
 			no_bank
 		end
