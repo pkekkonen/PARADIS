@@ -2,22 +2,7 @@
 -export([init/1, start_link/0, start/0, handle_call/3, handle_info/2, handle_cast/2, balance/2, deposit/3, withdraw/3, lend/4, terminate/2]).
 -behavior(gen_server).
 
-start() -> 
-    start_link().
-    
-start_link() ->
-	{ok, Pid} = gen_server:start_link(?MODULE, [], []),
-	spawn(fun () -> 
-		MRef = monitor(process, Pid),
-		receive
-	    	{'DOWN', MRef, process, _Pid, _Why} ->
-	    	    	io:format("HEJ"),
-			% ets:delete(bank_server),
-			no_bank,
-			io:format("gtgtgt")
-		end
-	end),
-	Pid.
+
 
 init(_) -> 
 	ets:new(bank_server, [set, private, named_table]),
@@ -41,6 +26,7 @@ handle_info(_Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, _State) ->
+	io:format("hejjehje"),
     ets:delete(bank_server),
     ok.
 
