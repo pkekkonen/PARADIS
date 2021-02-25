@@ -9,6 +9,7 @@
 //thread. The termination should be done as soon as reasonable to achieve the best overall
 //performance.
 
+//TODO: programmet ska ta input via args[0] och|1]
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -17,7 +18,7 @@ import java.math.BigInteger;
 
 //TODO: @ThreadSafe
 class Factorizer implements Runnable {
-	private final static BigInteger MIN = new BigInteger("2"); //immutable shared state
+	private final static BigInteger MIN = BigInteger.TWO; //immutable shared state
 	private static boolean foundAns = false; //mutable shared state, use lock when reading and writing
     private static final Object countLock = new Object();
 
@@ -32,26 +33,30 @@ class Factorizer implements Runnable {
 		this.min = min;
 		this.product = product;
 		this.steps = steps;
-		max = product.subtract(BigInteger.ONE);
+		max = product.sqrt();
 	}
 	
 
-	
 	public void run() {
 		BigInteger number = min;
+		boolean isFound = false;
 		while (number.compareTo(max) <= 0) {
 			synchronized (countLock) {
-				if(!foundAns) {
-					if (product.remainder(number).compareTo(BigInteger.ZERO) == 0) {
-						factor1 = number;
-						factor2 = product.divide(factor1);
+				isFound = foundAns;
+			}
+
+			if (!isFound) {
+				if (product.remainder(number).compareTo(BigInteger.ZERO) == 0) {
+					factor1 = number;
+					factor2 = product.divide(factor1);
+					synchronized (countLock) {
 						foundAns = true;
-						return;
 					}
-					number = number.add(new BigInteger(Integer.toString(steps)));
-				} else {
 					return;
 				}
+				number = number.add(new BigInteger(Integer.toString(steps)));
+			} else {
+				return;
 			}
 		}
 	}
@@ -100,7 +105,7 @@ class Factorizer implements Runnable {
 
 			// Output results.
 			int numProcessors = Runtime.getRuntime().availableProcessors();
-			System.out.println("Range searched: " + MIN + " - " + p);
+			System.out.println("Range searched: " + MIN + " - " + p.sqrt());
 			String ans = f1 ==null? "No factorization possible" : "Factors: " + f1 + "*" + f2;
 			System.out.println(ans);
 			System.out.println("Available processors: " + numProcessors);
